@@ -12,8 +12,8 @@ Research &amp; Comparison of Confidence regions from different methods
 - Simultaneous confidence intervals
 - Simultaneous confidence intervals - Bonferroni corrections
 - Bootstraping
-- **Small sample corrections**
-- **Skewness corrections**
+- *Small sample corrections*
+- *Skewness corrections*
 
 When computing the boundaries of confidence regions, I will be using reparametrisation.
 
@@ -28,9 +28,9 @@ When computing the boundaries of confidence regions, I will be using reparametri
 - 10
 - 20
 - 50
-- **100**
-- **200**
-- **500**
+- *100*
+- *200*
+- *500*
 
 ## Metrics
 
