@@ -23,12 +23,15 @@ methods <- list('boot.kern', 'emp.bayes')
              # 'standard.ind', 'tost', 'tseng',
              # 'tseng.brown')
 
-pb <- progress_bar$new(total = nrow(values[101:120,]),
-                       width = 100,
-                       clear = FALSE,
-                       format = "Progress: [:bar] :percent | estimated time: :eta | elapsed time: :elapsed")
+od <- 241
+do <- 280
 
-results <- apply(values[101:120,], 1, function(data_row){
+pb <- progress_bar$new(total = nrow(values[od:do,]),
+                       width = 60,
+                       clear = FALSE,
+                       format = paste("Progress: [:bar] :percent | estimated time: :eta | elapsed time: :elapsed", '(', od, '-', do, ')'))
+
+results <- apply(values[od:do,], 1, function(data_row){
   lapply(1:(data_row['num_runs']), function(i){
     # Generate bivariate normal sample
     sample <- mvnormSample(mu_x = data_row['mu_x'], 
@@ -81,7 +84,7 @@ results <- apply(values[101:120,], 1, function(data_row){
   }) %>% bind_rows()
 }) %>% bind_rows()
 # took 2 hours
-write.csv2(results, file = './Data/data_101-120.csv', fileEncoding = 'UTF-8')
+write.csv2(results, file = paste0('./Data/data_',od ,'-', do, '.csv'), fileEncoding = 'UTF-8')
 
 
 
