@@ -8,6 +8,7 @@ library(Deriv)
 library(tictoc)
 library(concaveman)
 library(ggforce)
+library(progress)
 
 # package to plot and compute the joined confidence regions 
 library(jocre)
