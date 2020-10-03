@@ -27,7 +27,7 @@ od <- 241
 do <- 280
 
 pb <- progress_bar$new(total = nrow(values[od:do,]),
-                       width = 60,
+                       width = 100,
                        clear = FALSE,
                        format = paste("Progress: [:bar] :percent | estimated time: :eta | elapsed time: :elapsed", '(', od, '-', do, ')'))
 
