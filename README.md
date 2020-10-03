@@ -1,6 +1,8 @@
 # Confidence-regions
 Research &amp; Comparison of Confidence regions from different methods
 
+This repo is a part of my thesis research.
+
 # Goals
 
 - Accuracy comparison of confidence regions given by different methods
@@ -39,7 +41,7 @@ When computing the boundaries of confidence regions, I will be using reparametri
 - Computation time
 - Computed coverage (percentage of how many times confidence region actually contained the theoretical parameter)
 
-## Vizalization
+## Visualization
 
 - 2D
 - 3D
