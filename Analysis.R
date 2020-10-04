@@ -7,6 +7,7 @@ CR_data <- lapply(list.files('./Data'),
                                          fileEncoding = 'UTF-8', 
                                          row.names = 'X')}) %>% bind_rows()
 
+
 # confidence level of model based on sample size
 CR_data %>% 
   group_by(method, alpha_value, sample.size, sample.number) %>% 
@@ -14,12 +15,23 @@ CR_data %>%
             mean_time = mean(computation.time),
             confidence_level = mean(as.numeric(is_inhull))) %>% 
   arrange(desc(mean_cov)) %>% 
-  filter(alpha_value == 0.01) %>% 
   ggplot() + 
   geom_boxplot(aes(x = method, y = confidence_level, fill = method)) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  facet_wrap('sample.size')
+  facet_grid(sample.size ~ alpha_value)
 
-CR_data %>% left_join(values, by = c("mu_x", "mu_y", 'sample.size' = "n", "rho", "sigma_x", "sigma_y", "alpha_value"))
+CR_data %>% 
+  group_by(method, alpha_value, sample.size, sample.number) %>% 
+  summarise(mean_cov = mean(volume),
+            mean_inter = mean(intersection.volume),
+            confidence_level = mean(as.numeric(is_inhull))) %>% 
+  ggplot() + 
+  geom_boxplot(aes(x = method, y = mean_inter, fill = method)) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  facet_grid(sample.size ~ alpha_value, scales = 'free')
 
-names(values)
+# Total computation time
+CR_data %>% 
+  filter(!grepl('.*SCI', method)) %>% 
+  group_by(method) %>% 
+  summarise(comp_time = sum(computation.time)/(60*60))

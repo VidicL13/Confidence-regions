@@ -2,9 +2,6 @@
 source('./libraries.r')
 source('./functions.r')
 
-
-
-
 # Make a data.frame of all possible combinations
 values <- expand.grid(mu_x = c(0,10),
                       mu_y = c(0,10),
@@ -85,20 +82,5 @@ results <- apply(values[od:do,], 1, function(data_row){
 }) %>% bind_rows()
 # took 2 hours
 write.csv2(results, file = paste0('./Data/data_',od ,'-', do, '.csv'), fileEncoding = 'UTF-8')
-
-
-
-# took 2 hours
-write.csv2(results, file = './Data/data_81-100.csv', fileEncoding = 'UTF-8')
-
-# took 1 hour
-write.csv2(results, file = './Data/data_1-10.csv', fileEncoding = 'UTF-8')
-
-# took 5 hours
-write.csv2(results, file = './Data/data_11-70.csv', fileEncoding = 'UTF-8')
-
-
-# took 47 minutes
-write.csv2(results, file = './Data/data_71-80.csv', fileEncoding = 'UTF-8')
 
 
