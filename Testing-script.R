@@ -14,14 +14,14 @@ values <- expand.grid(mu_x = c(0,10),
                       num_runs = 100)
 
 # select methods for cset function
-methods <- list('boot.kern', 'emp.bayes')
-             #    , 'hotelling',
+methods <- list('standard.ind')
+             #  'hotelling' , 'boot.kern', 'emp.bayes',
              # 'limacon.asy', 'limacon.fin', 'standard.cor',
              # 'standard.ind', 'tost', 'tseng',
              # 'tseng.brown')
 
-od <- 241
-do <- 280
+od <- 1
+do <- 1
 
 pb <- progress_bar$new(total = nrow(values[od:do,]),
                        width = 100,
@@ -81,6 +81,6 @@ results <- apply(values[od:do,], 1, function(data_row){
   }) %>% bind_rows()
 }) %>% bind_rows()
 # took 2 hours
-write.csv2(results, file = paste0('./Data/data_',od ,'-', do, '.csv'), fileEncoding = 'UTF-8')
+write.csv2(results, file = paste0('./Data/data_',methods[[1]], '_', od, '-', do, '.csv'), fileEncoding = 'UTF-8')
 
 

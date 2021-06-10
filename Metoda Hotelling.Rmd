@@ -1,0 +1,341 @@
+---
+title: "Primerjava učinkovitosti računanja območji zaupanja"
+subtitle: "Raziskava za delo diplomskega seminarja"
+output:
+  html_document:
+    df_print: paged
+header_includes:
+- \usepackage{amsmath,amssymb,amsfonts}
+- \usepackage{amsthm}
+---
+\newenvironment{conditions}
+  {\par\vspace{\abovedisplayskip}\noindent\centering\begin{tabular}{>{$}l<{$} @{${}={}$} l}}
+  {\end{tabular}\par\vspace{\belowdisplayskip}}
+  
+
+Namen analize je raziskati učinkovitost različnih načinov konstrukcij območji zaupanja. Za začetek smo se omejili na enodimenzionalni primer, kasneje pa smo nadaljeval s primerjavo v $\mathbb{R}^2$. V obeh primerih smo testirali domnevo oblike:
+
+$$\mathcal{H}_0 : \mu = \mu_0 \quad \text{proti} \quad \mathcal{H}_A : \mu \ne \mu_0$$
+
+
+## Normalna porazdelitev 1D
+
+V enorazsežnem primeru smo vzorce generirali z normalno porazdelitvijo $\mathcal{N}(\mu, \sigma)$. Testne statistike, s pomočjo katerih smo kreirali intervale zaupanja so:
+
+- $z$ statistiko
+	\begin{equation*}
+		z = \frac{(\hat\mu - \mu_0)}{\sigma / \sqrt{n}}
+	\end{equation*}
+	za katero vemo, da je porazdeljena standardno normalno $\mathcal{N}(0,1)$. Za $(1-\alpha/2)$ kvantil bomo uporabili oznako $z(\alpha /2)$. Za $\hat\mu$ bomo izbrali CNV. Pripadajoč interval zaupanja je
+	\begin{equation*}
+		C_z(x) = \left[ \hat\mu - z(\alpha /2) \cdot \sigma /\sqrt{n}, \hat\mu + z(\alpha /2) \cdot \sigma /\sqrt{n} \right]
+	\end{equation*}
+- Studentovo $t$-statistiko (označili jo bomo kot Hotellingovo metodo, zaradi kasnejših primerjav),
+	\begin{equation*}
+		t = \frac{(\hat\mu - \mu_0)}{s / \sqrt{n}}
+	\end{equation*}
+	za katero vemo, da je porazdeljena Studentovo z $n-1$ stopnjami prostosti. Za $(1-\alpha/2)$ kvantil bomo uporabili oznako $t_{n-1}(\alpha /2)$. Za $\hat\mu$ bomo izbrali CNV, za $s$ pa bomo uporabljali
+	\begin{equation*}
+		s^2 = \frac{1}{n} \sum_{i=1}^{n} (x_i - \hat\mu)^2
+	\end{equation*}
+	Pripadajoč interval zaupanja je
+	\begin{equation*}
+		C_t(x) = \left[ \hat\mu - t_{n-1}(\alpha /2) \cdot s /\sqrt{n}, \hat\mu + t_{n-1}(\alpha /2) \cdot s /\sqrt{n} \right]
+	\end{equation*}
+- Razlika profilnega log-verjetja, za katero bomo uporabljali oznako $T_P$
+	\begin{equation*}
+		T_P = -2 \left[ \ell(\mu) - \ell(\hat\mu) \right]
+	\end{equation*}
+	katerega porazdelitev je pribljižno Chi kvadrat s stopnjo prostosti enako 1. Za $(1-\alpha)$ kvantil bomo uporabili oznako $\chi_{1}(\alpha)$. Za $\hat\mu$ bomo izbrali CNV. Pripadajoč inteval zaupanja je
+	\begin{equation*}
+		C_{T_P}(x) = [L,U],
+	\end{equation*}
+	kjer sta $L = \min\{ \mu \ | \ T_P(\mu) = \chi_{1}(\alpha) \}$ in $U = \max\{ \mu \ | \ T_P(\mu) = \chi_{1}(\alpha) \}$.
+
+Ker imamo pri $z$ statistiki več informacij o našem vzorcu (poznamo točno vrednost $\sigma$), posledično dobimo natančnejše intervale zaupanja. Ravno zato bomo to metodo uporabljali za izhodiščno meritev (benchmark).
+
+Za generiranje podatkov za vsak vzorec smo uporabili funkcijo `rnorm`. Želeli smo preveriti kako se metode odzivajo v različnih situacijah, torej ali se različni načini računanja območja zaupanja razlikujejo pri različnih vrednostih parametrov modela.
+
+Za parametre smo izbrali vrednosti $n = 5, 10, 20, 30, 40, 50, 100, 200, 400$, $\sigma = 1, 10, 15$ ter $\mu = 0$. Simulirali smo s pomočjo metode Monte Carlo, kjer smo za vsako kombinacijo parametrov $n, \sigma, \mu$ napravili 1000 ponovitev.
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+source(file = './libraries.r')
+source(file = './functions.r')
+```
+
+
+```{r eval=FALSE}
+parameters <- expand.grid(
+  run = c(1:1000),
+  n = c(5, 10, 20, 30, 40, 50, 100, 200, 300, 400, 500),
+  mu = 0,
+  sigma = c(1, 10, 15)
+)
+results <- apply(parameters, 1, cr_1d) %>% bind_rows()
+```
+
+```{r echo=FALSE}
+results <- read.csv2(file = './Data/results.csv', fileEncoding = 'UTF-8', row.names = 'X')
+```
+
+
+Najprej smo preverili odvisnost časa računanja od velikosti vzorca.
+
+```{r echo=FALSE}
+results %>% 
+  group_by(method, n) %>% 
+  summarise(comp_time = mean(comp_time)) %>% 
+  ggplot(aes(x = n, y = comp_time, col = method)) +
+  geom_line()
+```
+Opazili smo, da smo v povprečju največ časa porabili za izračun razlike profilnega log-verjetja, kar je smiselno, saj moramo v postopku iskanja meje intervala zaupanja poiskati ničlo funkcije, kar zahteva več časa, kot pa preproste operacije potrebne za izračun intervala zaupanja za drugi dve metodi. Ničle funkcije smo iskali s pomočjo funkcije `uniroot`. Ko iščemo ničle funkcije, moramo namreč večkrat (odvisno od tega kako hitro funkcija uniroot konvergira) izračunati vsoto funkcij log-verjetja dolžine $n$, kar pomeni, da z naraščanjem $n$ narašča tudi čas računanja. 
+
+Naslednja primerjava, ki smo jo napravili je bila med velikostjo intervala zaupanja ter velikostjo vzorca. Pričakovali smo, da bo dolžina intervala padala z naraščanjem velikosti vzorca. Zanimalo nas je ali se bodo pojavile kakšne razlike med metodami glede na izbiro $\sigma$.
+
+```{r echo=FALSE}
+results %>% 
+  group_by(method, n, sigma) %>% 
+  summarise(alpha = mean(is_in), size = mean(ci_len), sd_ci = sd(ci_len), comp_time = mean(comp_time)) %>% 
+  ggplot(aes(x = n, y = size, col = method)) +
+  geom_line()+
+  facet_wrap(vars(sigma))
+```
+
+
+### Od tukej naprej morm prekopirat!
+
+---
+
+Poskus je potrdil naša predvidevanja glede večanja velikosti vzorca. Večji kot je vzorec, krajši so intervali. Razvidno je, da so intervali v povprečju večji za višje vrednosti $\sigma$, kar je razumljivo, saj nam večja razpršenost podatkov podaja bolj nestanovitne ocene iskanega parametra. Rezultati so pokazali še več, za majhne $n$ nastajajo manjše razlike. Da bi ugotovitve bolje raziskali smo poskus ponovili, kjer smo za velikost vzorca izbrali $n = 5, 6, \dots, 15$, ostali parametri pa so ostali nespremenjeni. Poskus smo ponovili 1000x.
+
+```{r eval=FALSE}
+parameters2 <- expand.grid(
+  run = c(1:1000),
+  n = c(5:15),
+  mu = 0,
+  sigma = c(1, 10, 15)
+)
+```
+
+```{r eval=FALSE, echo=FALSE}
+results2 <- apply(parameters2, 1, cr_1d) %>% bind_rows()
+```
+
+
+```{r echo=FALSE}
+results2 <- read.csv2(file = './Data/results2.csv', fileEncoding = 'UTF-8', row.names = 'X')
+```
+
+Pri grafu bodite pozorni na različne enote na $y$-osi.
+
+```{r echo=FALSE}
+results2 %>% 
+  group_by(method, n, sigma) %>% 
+  summarise(alpha = mean(is_in), size = mean(ci_len), sd_ci = sd(ci_len), comp_time = mean(comp_time)) %>%
+  ggplot(aes(x = n, y = size, col = method)) +
+  geom_line()+
+  facet_wrap(vars(sigma), scales = 'free')
+```
+
+Pri Hotellingovi metodi so intervali neglede na $\sigma$ nekoliko večji kot pri ostalih dveh metodah. Vsekakor si želimo poiskati interval, ki bo imel najmanjšo dolžino pri izbrani stopnji zaupanja. V našem primeru smo izbrali stopnjo zaupanja $0.95$. Izbira metode izključno na podlagi te primerjave ne bi bila smiselna, saj Z zgornjo primerjavo nismo dobili nikakršnih informacij o pokritju, t.j. v kolikšnem odstotku je naš interval vseboval pravo vrednost iskanega parametra. V kolikor se izkaže, da sta pokritji Wilksove in Hotellingove metode primerljivi, potem lahko trdimo, da je Wilksova metoda boljša izbira, saj nam ponudi bolj natančne meje iskanega intervala.
+
+```{r echo=FALSE}
+results2 %>% 
+  bind_rows(results) %>% 
+  group_by(method, n) %>% 
+  filter(n <= 100) %>% 
+  summarise(alpha = mean(is_in)) %>% 
+  ggplot(aes(x = n, y = alpha, col = method)) +
+  geom_hline(yintercept = 0.95, col = 'orange', linetype = 'dashed') +
+  geom_line()
+```
+
+Izkazalo se je, da je za majhne vzorce Wilksova metoda problematična, saj za izbrano stopnjo zaupanja močno podceni območje zaupanja. Obe metodi se za večje vzorce ($n \ge 50$) približata izhodiščni metodi.
+
+### Povzetek
+
+Za konstrukcijo intervala zaupanja za test domneve $\mathcal{H}_0 : \mu = \mu_0 \quad \text{proti} \quad \mathcal{H}_A : \mu \ne \mu_0$, za vzorec, za katerega predvidevamo, da je porazdeljen normalno, je interval zaupanja dobljen s pomočjo Studentovega $t$-testa primernejša izbira neglede na velikost vzorca. Poda nam sicer daljši interval, vendar je ocena natančnejša ter čas računanja krajši. Intervali zaupanja dobljeni na podlagi razlike profilnega log-verjetja pa pridejo do izraza, ko ocenjujemo parameter za katerega vemo, da ni porazdeljen normalno. Takrat namreč ne moremo uporabiti Studentovega testa. Vseeno pa se moramo zavedati, da za majhne vzorce lahko pričakujemo nekoliko podcenjene intervale zaupanja. 
+
+## Normalna porazdelitev v dvorazsežnem primeru
+
+Naslednja primerjava, je bila narejena na bivariatni normalni porazdelitvi $\mathcal{N}(\mu, \Sigma)$, kjer je $\Sigma$ variančno kovariančna matrika. Enako kot pri enorazsežnem primeru nas je zanimala primerjava učinkovitosti območja zaupanja. 
+
+Pri računanju območja zaupanja smo uporabili dve testni statistiki, razliko profilnega log-verjetja ter Hotellingovo $T^2$ testno statistiko. V glavnem delu diplomskega seminarja smo predlagali reparametrizacijo iskanega parametra, s pomočjo katere lahko optimiziramo čas potreben za izračun območja zaupanja. Tako smo v nadaljevanju uporabili štiri različne testne statistike:
+
+\begin{itemize}
+  \item Razlika profilnega log-verjetja 
+  \begin{equation*}
+		T_P(\mu) = -2 \left[ \ell(\mu) - \ell(\hat\mu) \right]
+	\end{equation*}
+	ki je porazdeljeno $\chi_{2}^2$, meja območja zaupanja je
+	\begin{equation*}
+		\mathcal{B}_{T_P}(x) = \left\{ \mu \ | \ T_{P}(\mu) = \chi_{2}^{2} (\alpha) \right\}
+	\end{equation*}
+	
+	\item Reparametrizirana razlika profilnega log-verjetja
+	\begin{equation*}
+		T_{RP}(r, \varphi) = -2 \left[ \ell(r, \varphi) - \ell(0, \varphi) \right]
+	\end{equation*}
+	ki je porazdeljeno $\chi_{2}^2$, meja območja zaupanja je
+	\begin{equation*}
+		\mathcal{B}_{T_{RP}}(x) = \left\{ (r, \varphi) \ | \ T_{RP}(r, \varphi) = \chi_{2}^{2} (\alpha) \right\}
+	\end{equation*}
+	
+	\item Hotellingova $T^2$ statistika
+	\begin{equation*}
+		T_{H}^2 = n(\hat\mu - \mu)^{T} S^{-1} (\hat\mu - \mu)
+	\end{equation*}
+	ki je porazdeljena $\frac{(n-1)p}{n-p} F_{p, n-p}$, meja območja zaupanja je
+	\begin{equation*}
+		\mathcal{B}_{T_{H}^2}(x) = \left\{ \mu \ | \ T_{H}^2(\mu) = \frac{(n-1)p}{n-p} F_{p, n-p} (\alpha) \right\}
+	\end{equation*}
+	
+	\item Reparametrizirana Hotellingova $T^2$ statistika
+	\begin{equation*}
+		T_{RH}^2 = n r^2 \begin{bmatrix}
+		\cos(\varphi) \\
+		\sin(\varphi)
+	\end{bmatrix}^{T} S^{-1} \begin{bmatrix}
+		\cos(\varphi) \\
+		\sin(\varphi)
+	\end{bmatrix}
+	\end{equation*}
+	ki je porazdeljena $\frac{(n-1)p}{n-p} F_{p, n-p}$, meja območja zaupanja je
+	\begin{equation*}
+		\mathcal{B}_{T_{RH}^2}(x) = \left\{ (r, \varphi) \ | \ T_{RH}^2(r, \varphi) = \frac{(n-1)p}{n-p} F_{p, n-p} (\alpha) \right\}
+	\end{equation*}
+	
+\end{itemize}
+
+Za testni statistiki $T_P$ in $T_{H}^2$ smo za računanje meje območja zaupanja izbrali mrežo vrednosti parametra $\mu = (\mu_x, \mu_y)$, kjer smo meje parametrov določili na podlagi standardnega odklona vzorca
+
+\begin{equation*}
+		[ \hat\mu_x - 4 \cdot \hat\sigma_x / \sqrt{n}, \hat\mu_x + 4 \cdot \hat\sigma_x / \sqrt{n} ] \times	[ \hat\mu_y - 4 \cdot \hat\sigma_y / \sqrt{n}, \hat\mu_y + 4 \cdot \hat\sigma_y  / \sqrt{n}]
+\end{equation*}
+
+ter za vsako mrežo izbrali 10000 točk. Ker smo vrednosti testne statistike računali v izbranih točkah, je bila verjetnost, da bomo našli točno tisto točko, v kateri bomo dosegli kritično vrednost, enaka nič, smo za mejne točke smo izbrali tiste vrednosti $\mu$, za katere je bila ustrezna testna statistika v $\epsilon = 0.1$ okolici kritične vrednosti. Izbira točk pa ni bila vedno optimalna, včasih se je zgodilo, da nobena vrednost testne statistike ni ležala v $\epsilon$ okolici kritične vrednosti. Ker smo za primerjavo potrebovali mejo območja zaupanja smo V teh primerih parametre ponastavili tako, da smo za mejne točke nove mreže parametrov izbrali najmanjše ter največje vrednosti $x$ in $y$ koordinat, kjer je bila vrednost testne statistike med desetimi najnižjimi
+
+\begin{align*}
+  min_x &= \min \{ \mu_x | T(\mu_x, \mu_y) \in \text{10 najmanjših vrednosti } |T| \} - 3 \cdot \hat\sigma_x / \sqrt{n} \\
+  max_x &= \max \{ \mu_x | T(\mu_x, \mu_y) \in \text{10 najmanjših vrednosti } |T| \} + 3 \cdot \hat\sigma_x / \sqrt{n} \\
+  min_y &= \min \{ \mu_y | T(\mu_x, \mu_y) \in \text{10 najmanjših vrednosti } |T| \} - 3 \cdot \hat\sigma_y / \sqrt{n} \\
+  max_y &= \max \{ \mu_y | T(\mu_x, \mu_y) \in \text{10 najmanjših vrednosti } |T| \} + 3 \cdot \hat\sigma_y / \sqrt{n}
+\end{align*}
+
+Tako smo dobili novo mrežo parametrov $[min_x, max_x] \times [min_y, max_y]$ za katere smo izračunali vrednosti testne statistike. S takšnim pristopom smo meje območja dobili v prvem oziroma drugem poskusu računanja. Za testni statistiki $T_{RP}$ in $T_{RH}^2$ pa smo izbrali 180 ekvidistančnih vrednosti parametra $\varphi \in [0, 2 \pi]$, ter s funkcijo `uniroot` poiskali vrednost parametra $r$, pri katerem ustrezna testna statistika doseže kritično vrednost. 
+
+Za generiranje vzorcev smo uporabili funkcijo `mvrnorm`. Ker smo želeli preveriti kako se metode obnašajo pri različnih vzorcih, smo za parametre izbrali
+
+```{r}
+parameters_2d <- expand.grid(
+  run = c(1:100),
+  mu_x = 0,
+  mu_y = 0,
+  rho = c(0.3, 0.9),
+  sigma_x = c(1, 10),
+  sigma_y = c(1),
+  n = c(5:15, 50, 100, 500),
+  epsilon = 0.1
+)
+```
+
+Za simulacijo smo uporabili Monte Carlo metodo s 100 ponovitvami za vsako kombinacijo parametrov. Metrike, ki smo jih zbirali so:
+
+- vol
+- comp_time
+- is_in
+- num_border_points
+
+
+```{r eval=FALSE, echo=FALSE}
+pb <- txtProgressBar(min = 0, max = 5600, style = 3)
+system.time(results3 <- apply(parameters_2d, 1, cr_2d) %>% bind_rows())
+#write.csv2(results3, file = './Data/results3.csv', fileEncoding = 'UTF-8')
+```
+
+Rezultati primerjave so pokazali, da reparametrizacija testne statistike razpolovi čas računanja območja zaupanja za vse velikosti vzorca tako pri metodi razlike prfolnega log-verjetja, kot tudi pri Hotellingovi.
+
+```{r echo=FALSE}
+results3 <- read.csv2(file = './Data/results3.csv', fileEncoding = 'UTF-8', row.names = 'X')
+results3 %>% 
+  group_by(method, n) %>%
+  summarise(comp_time = mean(comp_time)) %>% 
+  ggplot(aes(x = n, y = comp_time, col = method)) +
+  geom_line() +
+  ylab('Average computation time [s]')
+```
+
+Metoda razlike prfolnega log-verjetja se je v primerjavi s Hotellingovo izkazala za hitrejšo. Da bi ugotovili kako natančno mejo območja zaupanja je posamičen način podal, smo primerjali število dobljenih točk na robu območja. Opazili smo, da se je najslabše odrezala metoda računanja razlike profilnega log-verjetja, ki je za izbrane parametre v povprečju podala 66 odstotkov manj točk kot njena reparametrizirana varianta. Še več, ko smo podatke razdelili glede na korelacijski koeficient $\rho$ s pomočjo katerega smo določali osnovno porazdelitev vzorca, je razlika postala še bolj očitna. Pri večjih $\rho$ smo opazili, da tako pri Hotellingovi kot pri razmerju verjetij, dobimo manjše število točk, kar lahko pomeni, da so območja zaupanja slabše definirana.
+
+```{r echo=FALSE}
+results3 %>% group_by(method, rho) %>% summarise(num_border_points = mean(num_border_points)) %>% separate(method, c('method', 'type'), sep = ' ') %>% 
+  spread(type, num_border_points) %>% arrange(rho, method)
+```
+Nadaljnja analiza je potrdila naša predvidevanja. Določena območja zaupanja dobljena z metodo mreže so bila nepopolna, kar je bilo razvidno tudi v nadaljni analizi.
+
+```{r echo=FALSE}
+pl1 <- read.csv2(file = './Data/plot1.csv', fileEncoding = 'UTF-8') %>% ggplot(aes(x = mux, y = muy, col = method)) + geom_point() + facet_wrap(vars(type))
+pl1
+```
+
+Analizo smo nadaljevali enako kot smo to storili pri enorazsežnem primeru. Pogledali smo si, kakšna je bila velikost dobljenega območja zaupanja. 
+
+```{r echo=FALSE}
+results3 %>% 
+  mutate(Sigma = paste('sigma x:', sigma_x, 'sigma y:', sigma_y)) %>% 
+  group_by(method, n, Sigma) %>% 
+  summarise(alpha = mean(is_in), size = mean(vol), sd_ci = sd(vol), comp_time = mean(comp_time)) %>%
+  filter(n <= 50) %>% 
+  ggplot(aes(x = n, y = size, col = method)) +
+  geom_line() + 
+  facet_wrap(vars(Sigma), scales = 'free')
+```
+
+Ugotovili smo, podobmo kot pri enorazsežnem primeru, z večanjem vzorca dobimo manjša območja. Prav tako je metoda razmerja verjetij podala nekoliko manjša območja zaupanja, med izbiro načina računanja območja zaupanja za posamezno metodo pa ni bilo bistvenih razlik. Ravno tako je bila velikost območja zaupanja za bolj nestanovitne vzorce večja, kar lepo odraža nesigurnost, ki nastane zaradi večje razpršenosti vzorca (pozorni bodite na skalo $y$-osi). Sledila je primerjava pokritja, ki je pokazala, da metoda razmerja verjetij za manjše vzorce nekoliko podceni pokritje. Takšno obnašanje smo zasledili tudi v enorazsežnem primeru. 
+
+
+```{r echo=FALSE}
+results3 %>% 
+  group_by(method, n) %>% 
+  summarise(alpha = mean(is_in)) %>% 
+  filter(n <= 50) %>% 
+  ggplot(aes(x = n, y = alpha, col = method)) +
+  geom_hline(yintercept = 0.95, col = 'orange', linetype = 'dashed') +
+  geom_line()+ 
+  ylab('1 - alpha')
+```
+
+# Zaključek
+
+V raziskavi smo ugotovili, da je smiselno uporabiti reparametrizacijo, saj nam bistveno skrajša čas računanja in nam poda natančnejše rezultate. Pri izbiri metode s katero bomo računali območja zaupanja pa je izbira odvisna od namena uporabe. Če testiramo domneve oblike $\mathcal{H}_0: \mu = \mu_0$ proti $\mathcal{H}_A : \mu \ne \mu_0$, kjer so podatki porazdeljeni normalno in imamo manjši vzorec, predlagamo uporabo Hotellingove metode. Čeprav je nekoliko počasnejša, se za majhne vzorce obnaša veliko lepše. Ko pa so vzorci večji od 50, pa je vseeno katero metodo izberemo, saj dobimo ekvivalentne rezultate. V primeru, kjer parameter, katerega ocenjujemo ni porazdeljen normalno, Hotellingova metoda ne bo prava izbira. Takrat izberemo metodo razmerja verjetij.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
