@@ -1,6 +1,6 @@
 # Setup the environment
 source('./libraries.r')
-source('./functions.r')
+source('./functions_old.r')
 
 # Make a data.frame of all possible combinations
 values <- expand.grid(mu_x = c(0,10),
