@@ -1,47 +1,6 @@
-# Confidence-regions
-Research &amp; Comparison of Confidence regions from different methods
+# Construction of the confidence region boundary
 
-This repo is a part of my thesis research.
+This repository is the research part of my undergraduate thesis research. It stores the program code used for the research as well as a simple demo (`demo.r`).
 
-# Goals
-
-- Accuracy comparison of confidence regions given by different methods
-- Evaluation of examined methods
-
-## Methods of parameter estimation
-
-- MLE
-- Simultaneous confidence intervals
-- Simultaneous confidence intervals - Bonferroni corrections
-- Bootstraping
-- *Small sample corrections*
-- *Skewness corrections*
-
-When computing the boundaries of confidence regions, I will be using reparametrisation.
-
-## Distributions
-
-- Normal
-- Exponential
-- Gamma
-
-### Sample sizes
-
-- 10
-- 20
-- 50
-- *100*
-- *200*
-- *500*
-
-## Metrics
-
-- Volume (area, volume, hypervolume) of confidence region
-- Coverage of theorethical confidence region
-- Computation time
-- Computed coverage (percentage of how many times confidence region actually contained the theoretical parameter)
-
-## Visualization
-
-- 2D
-- 3D
+## Thesis abstract
+Many advanced statistical textbooks present the properties of asymptotic confidence regions, but most do not present methods of their numerical construction. In this work we present the concept of numerical computation of such regions and propose a method for its optimization. When constructing confidence regions for a selected parameter using an invariant test statistic, we may use a simple transformation, which allows us to compute the boundary of the confidence region with each computation and thus greatly reduce computation time. The concept is theoretically and practically interesting, as it gives us a method by which we can effectively construct confidence regions for the purposes of comparison or visualization. We also present a concrete implementation of the concept in the two-dimensional case for two different test statistics.
