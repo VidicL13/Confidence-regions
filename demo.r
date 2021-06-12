@@ -226,7 +226,7 @@ Lik_cr_3d <- function(data, len_out=180, signf_lvl=0.05){
 # Generate 2D data
 
 
-data_2d <- mvnormSample_2d(n = n)
+data_2d <- mvnormSample_2d(n = 20)
 mu_hat <- colMeans(data_2d)
 cr_2d_hot <- Hotelling_radial_cr(data = data_2d, len_out = 180) %>% slice(chull(x, y))
 cr_2d_lik <- Likelihood_radial_cr(data = data_2d, len_out = 180) %>% slice(chull(x, y))
@@ -289,8 +289,8 @@ run_3d <- function(n_pts, n_bnry_pts){
   cr_plot(data = data_3d_cr_hot, colour = 'green')
   cr_plot(data = data_3d_cr_lik, colour = 'blue')
 }
-run_3d(n_pts = 300, n_bnry_pts = 180)
-clear3d()
+run_3d(n_pts = 20, n_bnry_pts = 180)
+
 
 
 
